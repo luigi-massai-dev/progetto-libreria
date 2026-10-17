@@ -58,3 +58,45 @@ def aggiungi_libro(libro: Libro):
     conn.close()
     
     return {"id": nuovo_id, "messaggio": "Libro aggiunto con successo!"}
+from fastapi import HTTPException
+
+@app.put("/libri/{id_libro}")
+def modifica_libro(id_libro: int, libro: Libro):
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
+    
+    # Esegui l'UPDATE
+    cur.execute(
+        "UPDATE libri SET titolo = %s, autore = %s, anno = %s WHERE id = %s;",
+        (libro.titolo, libro.autore, libro.anno, id_libro)
+    )
+    
+    # Se nessuna riga è stata modificata, il libro non esiste
+    if cur.rowcount == 0:
+        cur.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail="Libro non trovato")
+        
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return {"messaggio": f"Libro {id_libro} modificato con successo!"}
+@app.delete("/libri/{id_libro}")
+def elimina_libro(id_libro: int):
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
+    
+    # Esegui il DELETE
+    cur.execute("DELETE FROM libri WHERE id = %s;", (id_libro,))
+    
+    if cur.rowcount == 0:
+        cur.close()
+        conn.close()
+        raise HTTPException(status_code=404, detail="Libro non trovato")
+        
+    conn.commit()
+    cur.close()
+    conn.close()
+    
+    return {"messaggio": f"Libro {id_libro} eliminato con successo!"}
